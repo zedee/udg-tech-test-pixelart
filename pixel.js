@@ -8,10 +8,10 @@ window.onload = (ev) => {
         x <= (cell.posX + cell.width) && y <= (cell.posY + cell.height)
         );
     });
-    //Test purposes
-    mainCanvas.grid[foundCellIndex].fillColor = "#000";
-    mainCanvas.drawGrid();
-    console.log(foundCellIndex);
+    if (foundCellIndex >= 0) {
+      mainCanvas.grid[foundCellIndex].fillColor = "#000";
+      mainCanvas.drawGrid();
+    }
   }
 
   const mainCanvas = new MainCanvas("main-canvas", 8);
