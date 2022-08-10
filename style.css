@@ -51,10 +51,49 @@ table {
   Pixel Art Stylesheet
 */
 #wrapper {
-  width: 100%;
-  height: 100%;
+	/* Now we limit w/h, i'll change this later */
+	width: 400px;
+	height: 400px;
+	margin: 0 auto;
 }
 
 canvas {
   border: 1px solid black;
+}
+
+#row-palette {
+	display: flex;
+	width: 100%;
+	height: 50px;
+	margin-bottom: 1rem;
+}
+
+#row-palette .palette-color {
+	width: 100%;
+	border: 1px solid black;
+}
+
+#row-palette .palette-color:hover {
+	border: 1px solid white;
+}
+
+#row-palette .palette-color.selected {
+	border: 1px solid white;
+}
+
+#col-controls {
+	width: 100%;
+	display: flex;
+	flex-direction: row;
+}
+
+#col-controls div {	
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+	text-align: center;
+}
+
+#col-controls div p {
+	margin: 1rem 0 1rem 0;
 }

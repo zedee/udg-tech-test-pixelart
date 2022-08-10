@@ -17,10 +17,46 @@
       <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="#">upgrade your browser</a> to improve your experience.</p>
     <![endif]-->
     <div id="wrapper">
-      <div id="col-canvas"></div>
-      <div id="col-controls"></div>
-    </div>
-    <canvas id="main-canvas"></canvas>
+      <div id="col-canvas">
+        <div id="row-palette"></div>
+        <div id="row-canvas">
+          <canvas id="main-canvas"></canvas>
+        </div>
+      </div>
+      <div id="col-controls">
+        <!-- Tools -->
+        <div>
+          <div>
+            <p>Available Tools</p>
+          </div>
+          <div id="col-controls-tool-select">
+            <button data-tool="pencil">Pencil tool</button>
+            <button data-tool="bucket">Paintbucket tool</button>
+          </div>
+        </div>
+        <!-- Grid size selection-->
+        <div>
+          <p>Grid Size</p>
+          <div id="col-controls-size-select">
+            <button data-grid-size="8">8 x 8</button>
+            <button data-grid-size="12">12 x 12</button>
+            <button data-grid-size="16">16 x 16</button>
+            <button data-grid-size="32">32 x 32</button>
+          </div>
+        </div>
+        <!-- Export options -->
+        <div>
+          <div>
+            <p>Export options</p>
+          </div>
+          <div id="col-controls-export-select">
+            <button data-export="png">Export to PNG</button>
+            <button data-export="jpg">Export to JPG</button>
+            <button data-export="gif">Export to GIF</button>
+          </div>
+        </div>
+      </div>
+    </div>    
     <script src="pixel.js" async defer></script>
   </body>
 </html>
