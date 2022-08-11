@@ -14,8 +14,6 @@ window.onload = (ev) => {
         );
     });
 
-    console.log(mainCanvas.grid);
-
     if (foundCellIndex >= 0) {
       //Paint the found pixel (pencil tool)
       if (mainCanvas.selectedTool == "pencil") {
@@ -24,8 +22,8 @@ window.onload = (ev) => {
       //Fill the area with the selected color (bucket tool)
       } else if (mainCanvas.selectedTool == "bucket") {                
         //Assign a 'hard' copy of our cell (to prevent references) and paint seed pixel
-        const cell = {}; 
-        Object.assign(cell, mainCanvas.grid[foundCellIndex]);
+        const initialCell = {}; 
+        Object.assign(initialCell, mainCanvas.grid[foundCellIndex]);
         mainCanvas.grid[foundCellIndex].fillColor = mainCanvas.selectedColor;          
         mainCanvas.drawGrid();
 
@@ -35,10 +33,9 @@ window.onload = (ev) => {
          */
         
         let pixelStack = [];
-        pixelStack.push(cell);
+        pixelStack.push(initialCell);
 
-        while(pixelStack.length != 0) {
-          //TODO: Set foundCellIndex selected color to our chosen color
+        while (pixelStack.length != 0) {          
           let lx = pixelStack.pop();
           let seedIndex = foundCellIndex;
 
@@ -47,7 +44,9 @@ window.onload = (ev) => {
           */
 
           //Paint in the -X direction
-          while((seedIndex - 1) != -1 && lx.fillColor == mainCanvas.grid[seedIndex - 1].fillColor) {                              
+          while (
+            (seedIndex - 1) != -1 && 
+            lx.fillColor == mainCanvas.grid[seedIndex - 1].fillColor) {                              
               Object.assign(lx, mainCanvas.grid[seedIndex - 1]);
               mainCanvas.grid[seedIndex - 1].fillColor = mainCanvas.selectedColor;
               mainCanvas.drawGrid();
@@ -57,15 +56,19 @@ window.onload = (ev) => {
           //Reset seed cell index
           seedIndex = foundCellIndex;
 
-          //Paint in the +X direction
-          while(seedIndex + 1 < mainCanvas.grid.length && 
-            lx.fillColor == mainCanvas.grid[seedIndex + 1].fillColor) {
+          //Paint in the +X direction (check we're not out of bounds)
+          while (seedIndex + 1 < mainCanvas.grid.length && 
+            lx.fillColor == mainCanvas.grid[seedIndex + 1].fillColor && 
+            seedIndex % mainCanvas.gridSize != mainCanvas.gridSize - 1) {
               Object.assign(lx, mainCanvas.grid[seedIndex + 1]);
               mainCanvas.grid[seedIndex + 1].fillColor = mainCanvas.selectedColor;
               mainCanvas.drawGrid();
               seedIndex++;
           }
         }
+
+        //Scan on the pixel down the seed
+
       }
     }
   }
