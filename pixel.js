@@ -7,19 +7,66 @@ window.onload = (ev) => {
     const x = ev.clientX - mainCanvas.canvasElement.offsetLeft;
     const y = ev.clientY - mainCanvas.canvasElement.offsetTop;
 
-    //We only have two tools (brush and bucket) so a simple else/if suffice
-    if (selectedTool == "pencil") {
-      let foundCellIndex = mainCanvas.grid.findIndex(cell => {
-        return (
-          x <= (cell.posX + cell.width) && y <= (cell.posY + cell.width)
-          );
-      });
-      if (foundCellIndex >= 0) {
+    //Find the cell which has been clicked onto
+    let foundCellIndex = mainCanvas.grid.findIndex(cell => {
+      return (
+        x < (cell.posX + cell.width) && y < (cell.posY + cell.width)
+        );
+    });
+
+    console.log(mainCanvas.grid);
+
+    if (foundCellIndex >= 0) {
+      //Paint the found pixel (pencil tool)
+      if (mainCanvas.selectedTool == "pencil") {
         mainCanvas.grid[foundCellIndex].fillColor = mainCanvas.selectedColor;
         mainCanvas.drawGrid();
+      //Fill the area with the selected color (bucket tool)
+      } else if (mainCanvas.selectedTool == "bucket") {                
+        //Assign a 'hard' copy of our cell (to prevent references) and paint seed pixel
+        const cell = {}; 
+        Object.assign(cell, mainCanvas.grid[foundCellIndex]);
+        mainCanvas.grid[foundCellIndex].fillColor = mainCanvas.selectedColor;          
+        mainCanvas.drawGrid();
+
+        /**
+         * Going with Span Filling algorithm
+         * https://en.wikipedia.org/wiki/Flood_fill  [Span Filling]
+         */
+        
+        let pixelStack = [];
+        pixelStack.push(cell);
+
+        while(pixelStack.length != 0) {
+          //TODO: Set foundCellIndex selected color to our chosen color
+          let lx = pixelStack.pop();
+          let seedIndex = foundCellIndex;
+
+          /* Step 1: Fill the row with same color (-x +x) within the boundaries of that row
+          * until we found a different color
+          */
+
+          //Paint in the -X direction
+          while((seedIndex - 1) != -1 && lx.fillColor == mainCanvas.grid[seedIndex - 1].fillColor) {                              
+              Object.assign(lx, mainCanvas.grid[seedIndex - 1]);
+              mainCanvas.grid[seedIndex - 1].fillColor = mainCanvas.selectedColor;
+              mainCanvas.drawGrid();
+              seedIndex--;
+          }
+
+          //Reset seed cell index
+          seedIndex = foundCellIndex;
+
+          //Paint in the +X direction
+          while(seedIndex + 1 < mainCanvas.grid.length && 
+            lx.fillColor == mainCanvas.grid[seedIndex + 1].fillColor) {
+              Object.assign(lx, mainCanvas.grid[seedIndex + 1]);
+              mainCanvas.grid[seedIndex + 1].fillColor = mainCanvas.selectedColor;
+              mainCanvas.drawGrid();
+              seedIndex++;
+          }
+        }
       }
-    } else {
-        //TODO: bucket painting tool logic
     }
   }
 
@@ -41,10 +88,22 @@ window.onload = (ev) => {
 
   //Grid resolution size change
   const handleGridSize = (ev) => {
+    switchActiveElement(sizeControls, ev.target);
     if (mainCanvas.gridSize != ev.target.dataset.gridSize) {
       mainCanvas.gridSize = ev.target.dataset.gridSize;
       mainCanvas.updateGrid(true);
       mainCanvas.drawGrid();
+    }
+  }
+
+  //Tool selection
+  const handleToolSelection = (ev) => {    
+    //Check if user wants to clear
+    if (ev.target.dataset.tool == "clear") {
+      mainCanvas.clearGrid();
+    } else {
+      mainCanvas.selectedTool = ev.target.dataset.tool;
+      switchActiveElement(toolControls, ev.target);
     }
   }
   
@@ -52,13 +111,16 @@ window.onload = (ev) => {
   const palette = createPalette("#row-palette");
   const mainCanvas = new MainCanvas("#main-canvas", 8);
   const sizeControls = document.querySelectorAll("#col-controls-size-select button");
-  const selectedTool = "pencil";
+  const toolControls = document.querySelectorAll("#col-controls-tool-select button");
 
   //Add eventListeners to our elements
   mainCanvas.canvasElement.addEventListener("click", handleCanvasClick, false);  
   palette.addEventListener("colorChange", handlePaletteColorChange, false);
   sizeControls.forEach(element => {
     element.addEventListener("click", handleGridSize, false);
+  });
+  toolControls.forEach(element => {
+    element.addEventListener("click", handleToolSelection, false);
   });
   window.addEventListener("resize", handleWindowResize, false);  
 }
@@ -73,6 +135,7 @@ function MainCanvas (domElementId, gridSize) {
   this.gridBorderColor = "#000";
   this.grid = [];
   this.selectedColor = "#000";
+  this.selectedTool = "pencil";
 
   this.init = function() {
     this.canvasElement.width = this.width;
@@ -106,8 +169,7 @@ function MainCanvas (domElementId, gridSize) {
         const userAcceptsDelete = 
           confirm("Warning, changing the grid density will erase the current drawing, are you sure?");
         if (userAcceptsDelete) {
-          this.grid = [];
-          this.createGrid();
+          this.clearGrid();
         }
       } else {
         let yIndex = 0;
@@ -121,6 +183,12 @@ function MainCanvas (domElementId, gridSize) {
           cell.posY = ((this.width / this.gridSize * yIndex)) % this.width;
         });
       }
+    }
+
+    this.clearGrid = () => {
+      this.grid = [];
+      this.createGrid();
+      this.drawGrid();
     }
 
     //Grid (re)draw function
@@ -195,4 +263,11 @@ function createPalette (targetElementId) {
   }
 
   return paletteWrapperElement;
+}
+
+function switchActiveElement(DOMSelector, eventTarget) {
+  DOMSelector.forEach(element => {
+    element.style.color = "black";
+  });
+  eventTarget.style.color = "red";
 }
