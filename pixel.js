@@ -24,51 +24,72 @@ window.onload = (ev) => {
         //Assign a 'hard' copy of our cell (to prevent references) and paint seed pixel
         const initialCell = {}; 
         Object.assign(initialCell, mainCanvas.grid[foundCellIndex]);
-        mainCanvas.grid[foundCellIndex].fillColor = mainCanvas.selectedColor;          
-        mainCanvas.drawGrid();
+
+        fillArea(initialCell, foundCellIndex);
 
         /**
          * Going with Span Filling algorithm
          * https://en.wikipedia.org/wiki/Flood_fill  [Span Filling]
          */
-        
-        let pixelStack = [];
-        pixelStack.push(initialCell);
-
-        while (pixelStack.length != 0) {          
-          let lx = pixelStack.pop();
-          let seedIndex = foundCellIndex;
-
-          /* Step 1: Fill the row with same color (-x +x) within the boundaries of that row
-          * until we found a different color
-          */
-
-          //Paint in the -X direction
-          while (
-            (seedIndex - 1) != -1 && 
-            lx.fillColor == mainCanvas.grid[seedIndex - 1].fillColor) {                              
-              Object.assign(lx, mainCanvas.grid[seedIndex - 1]);
-              mainCanvas.grid[seedIndex - 1].fillColor = mainCanvas.selectedColor;
-              mainCanvas.drawGrid();
-              seedIndex--;
+        function fillArea(initialCell, foundCellIndex) {
+          if (initialCell.fillColor == mainCanvas.selectedColor) {
+            return;
           }
 
-          //Reset seed cell index
-          seedIndex = foundCellIndex;
+          //Paint our first pixel now
+          mainCanvas.grid[foundCellIndex].fillColor = mainCanvas.selectedColor;
 
-          //Paint in the +X direction (check we're not out of bounds)
-          while (seedIndex + 1 < mainCanvas.grid.length && 
-            lx.fillColor == mainCanvas.grid[seedIndex + 1].fillColor && 
-            seedIndex % mainCanvas.gridSize != mainCanvas.gridSize - 1) {
-              Object.assign(lx, mainCanvas.grid[seedIndex + 1]);
-              mainCanvas.grid[seedIndex + 1].fillColor = mainCanvas.selectedColor;
-              mainCanvas.drawGrid();
-              seedIndex++;
-          }
+          let pixelStack = [];
+          pixelStack.push(initialCell);
+
+          //while(pixelStack.length != 0) {
+            let startingPixel = pixelStack.pop();
+            let startingIndex = foundCellIndex;
+
+            //Compare pixel to the left and paint repeatedly until boundary or another color is found
+            while(
+              (startingIndex - 1) != -1 && 
+              startingIndex % mainCanvas.gridSize != 0 &&
+              startingPixel.fillColor == mainCanvas.grid[startingIndex - 1].fillColor) {
+
+              Object.assign(startingPixel, mainCanvas.grid[startingIndex - 1].fillColor);
+              mainCanvas.grid[startingIndex - 1].fillColor = mainCanvas.selectedColor;              
+              startingIndex--;          
+            }
+            //Reset starting index
+            startingIndex = foundCellIndex;
+
+            //Compare pixel to the right and paint repeatedly until boundary or another color is found
+            while(
+              startingIndex + 1 < mainCanvas.grid.length && 
+              startingIndex % mainCanvas.gridSize != (mainCanvas.gridSize - 1) &&
+              startingPixel.fillColor == mainCanvas.grid[startingIndex + 1].fillColor) {
+
+              Object.assign(startingPixel, mainCanvas.grid[startingIndex + 1].fillColor);
+              mainCanvas.grid[startingIndex + 1].fillColor = mainCanvas.selectedColor;              
+              startingIndex++;          
+            }
+
+            //Scan the starting pixel upper bound
+            if (foundCellIndex - mainCanvas.gridSize > 0) {
+              if (mainCanvas.grid[foundCellIndex - mainCanvas.gridSize].fillColor == startingPixel.fillColor) {
+                const upperCell = {};
+                Object.assign(upperCell, mainCanvas.grid[foundCellIndex - mainCanvas.gridSize]);
+                fillArea(upperCell, foundCellIndex - mainCanvas.gridSize);
+              }
+            }
+            //Scan the starting pixel lower bound
+            if (foundCellIndex + mainCanvas.gridSize < mainCanvas.grid.length) {
+              if (mainCanvas.grid[foundCellIndex + mainCanvas.gridSize].fillColor == startingPixel.fillColor) {
+                const lowerCell = {};
+                Object.assign(lowerCell, mainCanvas.grid[foundCellIndex + mainCanvas.gridSize]);
+                fillArea(lowerCell, foundCellIndex + mainCanvas.gridSize);
+              }
+            }
+          //}
+          //Repaint grid
+          mainCanvas.drawGrid();
         }
-
-        //Scan on the pixel down the seed
-
       }
     }
   }
