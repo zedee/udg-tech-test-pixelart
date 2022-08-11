@@ -8,16 +8,23 @@ window.onload = (ev) => {
     const y = ev.clientY - mainCanvas.canvasElement.offsetTop;
 
     //Find the cell which has been clicked onto
-    let foundCellIndex = mainCanvas.grid.findIndex(cell => {
-      return (
-        x < (cell.posX + cell.width) && y < (cell.posY + cell.width)
-        );
-    });
+    let foundCellIndex = -1;
+    let foundCoordinates = { rowIndex: -1, cellIndex: -1 };
 
-    if (foundCellIndex >= 0) {
+    for (let i = 0; i < mainCanvas.grid.length; i++) {
+      foundCellIndex = mainCanvas.grid[i].findIndex(cell => isInBoundaries(cell, x, y));
+      if (foundCellIndex != -1) {
+        foundCoordinates.rowIndex = i;
+        foundCoordinates.cellIndex = foundCellIndex;
+        break;
+      }
+    }
+
+    if (foundCoordinates.rowIndex >= 0) {
       //Paint the found pixel (pencil tool)
       if (mainCanvas.selectedTool == "pencil") {
-        mainCanvas.grid[foundCellIndex].fillColor = mainCanvas.selectedColor;
+        mainCanvas.grid[foundCoordinates.rowIndex][foundCoordinates.cellIndex].fillColor = 
+          mainCanvas.selectedColor;
         mainCanvas.drawGrid();
       //Fill the area with the selected color (bucket tool)
       } else if (mainCanvas.selectedTool == "bucket") {
@@ -137,17 +144,19 @@ function MainCanvas (domElementId, gridSize) {
     this.canvasElement.width = this.width;
     this.canvasElement.height = this.height;
 
-    this.createGrid = function() {
+    this.createGrid = function(drawCallback) {
       for (let i = 0; i < this.gridSize; i++) {
+        this.grid.push([]);
         for (let j = 0; j < this.gridSize; j++) {
-          this.grid.push(new Cell(
+          this.grid[i].push(new Cell(
             this.width / this.gridSize, 
             this.width / this.gridSize,
             ((this.width / this.gridSize * j) % this.width),
             ((this.width / this.gridSize * i) % this.width)
-          ))
+          ));
         }
       }
+      drawCallback();
     }
 
     //Scaling function when window is resized
@@ -168,35 +177,34 @@ function MainCanvas (domElementId, gridSize) {
           this.clearGrid();
         }
       } else {
-        let yIndex = 0;
-        this.grid.forEach((cell, index) => {
-          if (index !== 0 && index % this.gridSize == 0) {
-            yIndex++;
-          }
-          cell.width = this.width / this.gridSize; 
-          cell.height = this.width / this.gridSize;
-          cell.posX = ((this.width / this.gridSize * (index % this.gridSize)) % this.width);
-          cell.posY = ((this.width / this.gridSize * yIndex)) % this.width;
+        this.grid.forEach((row, rowIndex) => {
+          this.row.forEach((cell, cellIndex) => {
+            cell.width = this.width / this.gridSize; 
+            cell.height = this.width / this.gridSize;
+            cell.posX = ((this.width / this.gridSize * (cellIndex % this.gridSize)) % this.width);
+            cell.posY = ((this.width / this.gridSize * rowIndex)) % this.width;
+          });
         });
       }
     }
 
-    this.clearGrid = () => {
-      this.grid = [];
-      this.createGrid();
-      this.drawGrid();
-    }
-
     //Grid (re)draw function
-    this.drawGrid = () => this.grid.forEach(cell => {
-      this.context.fillStyle = cell.fillColor;
-      this.context.strokeStyle = this.gridBorderColor;
-      this.context.strokeRect(cell.posX, cell.posY, cell.width, cell.width);
-      this.context.fillRect(cell.posX, cell.posY, cell.width, cell.width);
+    this.drawGrid = () => this.grid.forEach(row => {
+      row.forEach(cell => {
+        this.context.fillStyle = cell.fillColor;
+        this.context.strokeStyle = this.gridBorderColor;
+        this.context.strokeRect(cell.posX, cell.posY, cell.width, cell.width);
+        this.context.fillRect(cell.posX, cell.posY, cell.width, cell.width);
+      });
     });
 
-    this.createGrid();
-    this.drawGrid();
+    //Clears the grid
+    this.clearGrid = () => {
+      this.grid = [];
+      this.createGrid(this.drawGrid);
+    }
+
+    this.createGrid(this.drawGrid);
   }
 
   this.init();
@@ -266,4 +274,8 @@ function switchActiveElement(DOMSelector, eventTarget) {
     element.style.color = "black";
   });
   eventTarget.style.color = "red";
+}
+
+function isInBoundaries(cell, x, y) {
+  return (x < (cell.posX + cell.width) && y < (cell.posY + cell.width) && x > cell.posX && y > cell.posY);
 }
