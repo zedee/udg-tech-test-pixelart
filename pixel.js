@@ -28,44 +28,44 @@ window.onload = (ev) => {
         mainCanvas.drawGrid();
       //Fill the area with the selected color (bucket tool)
       } else if (mainCanvas.selectedTool == "bucket") {
-        fillArea(
-          mainCanvas.grid[foundCellIndex], 
-          foundCellIndex, 
-          mainCanvas.grid[foundCellIndex].fillColor, 
+        let pixelStack = [];
+
+        floodFillArea(
+          foundCoordinates.rowIndex, 
+          foundCoordinates.cellIndex,
+          mainCanvas.grid[foundCoordinates.rowIndex][foundCoordinates.cellIndex].fillColor,
           mainCanvas.selectedColor
         );
 
         /**
-         * Going with Simple 4 way recursive method
-         * Quite inefficient but works for our purposes
+         * Going with Simple 4 way iterative method
+         * Bit inefficient but works for our purposes
          * https://en.wikipedia.org/wiki/Flood_fill  [Stack-based recursive implementation (four-way)]
          */
-        function fillArea(initialCell, initialIndex, oldColor, targetColor) {
-          if (!initialCell || initialIndex < 0 || initialIndex >= mainCanvas.grid.length) {
-            return;
-          }
+        function floodFillArea(x, y, oldColor, newColor) {
+          pixelStack.push([x, y]);
 
-          if (initialCell.fillColor !== oldColor || initialCell.fillColor == targetColor) {
-            return;
-          }
-          
-          initialCell.fillColor = targetColor;
+          while(pixelStack.length > 0) {
+            let [x, y] = pixelStack.pop();
 
-          //Go in the 4 directions
-          fillArea(mainCanvas.grid[initialIndex + 1], initialIndex + 1, oldColor, targetColor);
-          fillArea(mainCanvas.grid[initialIndex - 1], initialIndex - 1, oldColor, targetColor);
-          fillArea(
-            mainCanvas.grid[initialIndex - mainCanvas.gridSize], 
-            initialIndex - mainCanvas.gridSize, 
-            oldColor,
-            targetColor
-          );
-          fillArea(
-            mainCanvas.grid[initialIndex + mainCanvas.gridSize], 
-            initialIndex + mainCanvas.gridSize, 
-            oldColor,
-            targetColor
-          );
+            //Check if valid boundaries
+            if (x < 0 || x > mainCanvas.grid.length - 1 || y < 0 || y > mainCanvas.grid[x].length - 1) {
+              continue;
+            }
+            
+            if (mainCanvas.grid[x][y].fillColor !== oldColor || mainCanvas.grid[x][y].fillColor == newColor) {
+              continue;
+            }
+
+            //Apply the new color
+            mainCanvas.grid[x][y].fillColor = newColor;
+
+            //Push the neighbors in 4 directions
+            pixelStack.push([x + 1, y]);
+            pixelStack.push([x - 1, y]);
+            pixelStack.push([x, y + 1]);
+            pixelStack.push([x, y - 1]);
+          }
         }
         //Repaint grid
         mainCanvas.drawGrid();        
