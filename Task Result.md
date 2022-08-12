@@ -28,6 +28,4 @@ The following components must be installed locally:
 
 - A modern ES6 and CSS3 compliant browser (Firefox, Chrome, Edge, Brave, Safari...)
 
-To run the project locally, enter the following in the command line / bash:
-
 ---
