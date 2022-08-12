@@ -46,6 +46,7 @@ window.onload = (ev) => {
           pixelStack.push([x, y]);
 
           while(pixelStack.length > 0) {
+            //Assign values from the array to vars x and y
             let [x, y] = pixelStack.pop();
 
             //Check if valid boundaries
@@ -109,12 +110,35 @@ window.onload = (ev) => {
       switchActiveElement(toolControls, ev.target);
     }
   }
+
+  //Export selection
+  const handleExportImageSelection = (ev) => {
+    //Image Export data URL container
+    let imageExport;
+
+    //Create a canvas buffer and redraw it for export purposes (no grid visible)
+    const mainCanvasBuffer = createCanvasExportBuffer(mainCanvas);
+
+    switch (ev.target.dataset.export) {
+      case "png":
+        imageExport = mainCanvasBuffer.toDataURL("image/png");        
+        break;
+      case "jpg":
+        imageExport = mainCanvasBuffer.toDataURL("image/jpeg");
+        break;
+      case "gif":
+        imageExport = mainCanvasBuffer.toDataURL("image/gif");
+        break;
+    }
+    ev.target.parentNode.href = imageExport;
+  }
   
   //Init palette and main drawing canvas
   const palette = createPalette("#row-palette");
   const mainCanvas = new MainCanvas("#main-canvas", 8);
   const sizeControls = document.querySelectorAll("#col-controls-size-select button");
   const toolControls = document.querySelectorAll("#col-controls-tool-select button");
+  const exportControls = document.querySelectorAll("#col-controls-export-select button");
 
   //Add eventListeners to our elements
   mainCanvas.canvasElement.addEventListener("click", handleCanvasClick, false);  
@@ -125,6 +149,10 @@ window.onload = (ev) => {
   toolControls.forEach(element => {
     element.addEventListener("click", handleToolSelection, false);
   });
+  exportControls.forEach(element => {
+    element.addEventListener("click", handleExportImageSelection, false);
+  });
+  //TODO: handle scaling correctly
   window.addEventListener("resize", handleWindowResize, false);  
 }
 
@@ -178,7 +206,7 @@ function MainCanvas (domElementId, gridSize) {
         }
       } else {
         this.grid.forEach((row, rowIndex) => {
-          this.row.forEach((cell, cellIndex) => {
+          row.forEach((cell, cellIndex) => {
             cell.width = this.width / this.gridSize; 
             cell.height = this.width / this.gridSize;
             cell.posX = ((this.width / this.gridSize * (cellIndex % this.gridSize)) % this.width);
@@ -189,11 +217,13 @@ function MainCanvas (domElementId, gridSize) {
     }
 
     //Grid (re)draw function
-    this.drawGrid = () => this.grid.forEach(row => {
+    this.drawGrid = (disableGrid) => this.grid.forEach(row => {
       row.forEach(cell => {
         this.context.fillStyle = cell.fillColor;
         this.context.strokeStyle = this.gridBorderColor;
-        this.context.strokeRect(cell.posX, cell.posY, cell.width, cell.width);
+        if (!disableGrid) {
+          this.context.strokeRect(cell.posX, cell.posY, cell.width, cell.width);
+        }        
         this.context.fillRect(cell.posX, cell.posY, cell.width, cell.width);
       });
     });
@@ -269,6 +299,7 @@ function createPalette (targetElementId) {
   return paletteWrapperElement;
 }
 
+//Switch active element (marks it in red)
 function switchActiveElement(DOMSelector, eventTarget) {
   DOMSelector.forEach(element => {
     element.style.color = "black";
@@ -276,6 +307,22 @@ function switchActiveElement(DOMSelector, eventTarget) {
   eventTarget.style.color = "red";
 }
 
+//Check if a selected x, y screen point is in boundaries
 function isInBoundaries(cell, x, y) {
   return (x < (cell.posX + cell.width) && y < (cell.posY + cell.width) && x > cell.posX && y > cell.posY);
+}
+
+//Creates a buffer of the current canvas without the gridlines for exporting or preview purposes
+function createCanvasExportBuffer(originCanvas) {
+    const mainCanvasBuffer = document.createElement('canvas');
+    mainCanvasBuffer.width = originCanvas.width;
+    mainCanvasBuffer.height = originCanvas.height;
+    const mainCanvasBufferContext = mainCanvasBuffer.getContext('2d');
+    mainCanvasBuffer.style.display = "none";    
+    originCanvas.drawGrid(true); //Set up disable grid on canvas
+    const imgData = originCanvas.context.getImageData(0, 0, originCanvas.width, originCanvas.height);
+    originCanvas.drawGrid(false); //Set up disable grid on canvas
+    mainCanvasBufferContext.putImageData(imgData, 0, 0);
+
+    return mainCanvasBuffer;
 }
