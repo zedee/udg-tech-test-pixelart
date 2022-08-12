@@ -1,6 +1,10 @@
 'use strict';
 
 window.onload = (ev) => {
+  /**
+   * Handlers Section 
+   */
+
   //Handler for the canvas operations
   const handleCanvasClick = (ev) => {
     //Get absolute position respect to canvas
@@ -8,17 +12,7 @@ window.onload = (ev) => {
     const y = ev.clientY - mainCanvas.canvasElement.offsetTop;
 
     //Find the cell which has been clicked onto
-    let foundCellIndex = -1;
-    let foundCoordinates = { rowIndex: -1, cellIndex: -1 };
-
-    for (let i = 0; i < mainCanvas.grid.length; i++) {
-      foundCellIndex = mainCanvas.grid[i].findIndex(cell => isInBoundaries(cell, x, y));
-      if (foundCellIndex != -1) {
-        foundCoordinates.rowIndex = i;
-        foundCoordinates.cellIndex = foundCellIndex;
-        break;
-      }
-    }
+    const foundCoordinates = findCellCoordinatesInGrid(mainCanvas.grid, x, y);
 
     if (foundCoordinates.rowIndex >= 0) {
       //Paint the found pixel (pencil tool)
@@ -28,46 +22,13 @@ window.onload = (ev) => {
         mainCanvas.drawGrid();
       //Fill the area with the selected color (bucket tool)
       } else if (mainCanvas.selectedTool == "bucket") {
-        let pixelStack = [];
-
         floodFillArea(
           foundCoordinates.rowIndex, 
           foundCoordinates.cellIndex,
           mainCanvas.grid[foundCoordinates.rowIndex][foundCoordinates.cellIndex].fillColor,
-          mainCanvas.selectedColor
+          mainCanvas.selectedColor,
+          mainCanvas.grid
         );
-
-        /**
-         * Going with Simple 4 way iterative method
-         * Bit inefficient but works for our purposes
-         * https://en.wikipedia.org/wiki/Flood_fill  [Stack-based recursive implementation (four-way)]
-         */
-        function floodFillArea(x, y, oldColor, newColor) {
-          pixelStack.push([x, y]);
-
-          while(pixelStack.length > 0) {
-            //Assign values from the array to vars x and y
-            let [x, y] = pixelStack.pop();
-
-            //Check if valid boundaries
-            if (x < 0 || x > mainCanvas.grid.length - 1 || y < 0 || y > mainCanvas.grid[x].length - 1) {
-              continue;
-            }
-            
-            if (mainCanvas.grid[x][y].fillColor !== oldColor || mainCanvas.grid[x][y].fillColor == newColor) {
-              continue;
-            }
-
-            //Apply the new color
-            mainCanvas.grid[x][y].fillColor = newColor;
-
-            //Push the neighbors in 4 directions
-            pixelStack.push([x + 1, y]);
-            pixelStack.push([x - 1, y]);
-            pixelStack.push([x, y + 1]);
-            pixelStack.push([x, y - 1]);
-          }
-        }
         //Repaint grid
         mainCanvas.drawGrid();        
       }
@@ -132,6 +93,10 @@ window.onload = (ev) => {
     }
     ev.target.parentNode.href = imageExport;
   }
+
+  /**
+   * Init point
+   */
   
   //Init palette and main drawing canvas
   const palette = createPalette("#row-palette");
@@ -156,6 +121,11 @@ window.onload = (ev) => {
   window.addEventListener("resize", handleWindowResize, false);  
 }
 
+/**
+ * Main canvas object
+ * @param {*} domElementId 
+ * @param {*} gridSize 
+ */
 function MainCanvas (domElementId, gridSize) {
   this.domElementId = domElementId || "#canvas";
   this.canvasElement = document.querySelector(this.domElementId);
@@ -248,6 +218,11 @@ function Cell (width, height, posX, posY, fillColor) {
   this.fillColor = fillColor || "#FFF";
 }
 
+/**
+ * Create and attach a palette to the DOM
+ * @param {*} targetElementId 
+ * @returns 
+ */
 function createPalette (targetElementId) {
   const colorPalette = {
     default: [
@@ -307,10 +282,60 @@ function switchActiveElement(DOMSelector, eventTarget) {
   eventTarget.style.color = "red";
 }
 
+//Finds a cell into the grid
+function findCellCoordinatesInGrid(grid, x, y) {
+  let foundCellIndex = -1;
+  let foundCoordinates = { rowIndex: -1, cellIndex: -1 };
+
+  for (let i = 0; i < grid.length; i++) {
+    foundCellIndex = grid[i].findIndex(cell => isInBoundaries(cell, x, y));
+    if (foundCellIndex != -1) {
+      foundCoordinates.rowIndex = i;
+      foundCoordinates.cellIndex = foundCellIndex;
+      return foundCoordinates;
+    }
+  }
+
+  return foundCoordinates;
+}
+
 //Check if a selected x, y screen point is in boundaries
 function isInBoundaries(cell, x, y) {
   return (x < (cell.posX + cell.width) && y < (cell.posY + cell.width) && x > cell.posX && y > cell.posY);
 }
+
+/**
+ * Going with Simple 4 way iterative method
+ * Bit inefficient but works for our purposes
+ * https://en.wikipedia.org/wiki/Flood_fill  [Stack-based recursive implementation (four-way)]
+ */
+ function floodFillArea(x, y, oldColor, newColor, canvasGrid) {
+  let pixelStack = [];
+  pixelStack.push([x, y]);
+
+  while(pixelStack.length > 0) {
+    //Assign values from the array to vars x and y
+    let [x, y] = pixelStack.pop();
+
+    //Check if valid boundaries
+    if (x < 0 || x > canvasGrid.length - 1 || y < 0 || y > canvasGrid[x].length - 1) {
+      continue;
+    }
+    
+    if (canvasGrid[x][y].fillColor !== oldColor || canvasGrid[x][y].fillColor == newColor) {
+      continue;
+    }
+
+    //Apply the new color
+    canvasGrid[x][y].fillColor = newColor;
+
+    //Push the neighbors in 4 directions
+    pixelStack.push([x + 1, y]);
+    pixelStack.push([x - 1, y]);
+    pixelStack.push([x, y + 1]);
+    pixelStack.push([x, y - 1]);
+  }
+ }
 
 //Creates a buffer of the current canvas without the gridlines for exporting or preview purposes
 function createCanvasExportBuffer(originCanvas) {
