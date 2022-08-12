@@ -8,8 +8,9 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Pixel Art</title>
-    <meta name="description" content="">
+    <meta name="description" content="A simple pixel art editor">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="stylesheet" href="style.css">
   </head>
   <body>
@@ -17,7 +18,10 @@
       <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="#">upgrade your browser</a> to improve your experience.</p>
     <![endif]-->
     <div id="wrapper">
-      <div id="col-canvas">
+      <div>
+        <h1>Pixel Art</h1>
+      </div>
+      <div id="col-canvas">        
         <div id="row-palette"></div>
         <div id="row-canvas">
           <canvas id="main-canvas"></canvas>
@@ -25,7 +29,7 @@
       </div>
       <div id="col-controls">
         <!-- Tools -->
-        <div>
+        <div class="col">
           <div>
             <p>Available Tools</p>
           </div>
@@ -36,7 +40,7 @@
           </div>
         </div>
         <!-- Grid size selection-->
-        <div>
+        <div class="col">
           <p>Grid Size</p>
           <div id="col-controls-size-select">
             <button data-grid-size="8">8 x 8</button>
@@ -46,7 +50,7 @@
           </div>
         </div>
         <!-- Export options -->
-        <div>
+        <div class="col">
           <div>
             <p>Export options</p>
           </div>

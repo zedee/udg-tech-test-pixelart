@@ -52,11 +52,17 @@ window.onload = (ev) => {
   }
 
   //Grid resolution size change
-  const handleGridSize = (ev) => {
-    switchActiveElement(sizeControls, ev.target);
-    if (mainCanvas.gridSize != ev.target.dataset.gridSize) {
+  const handleGridSize = (ev) => {    
+    let resizeGrid = false;
+    const oldGridSize = mainCanvas.gridSize;
+    if (mainCanvas.gridSize != ev.target.dataset.gridSize) {      
       mainCanvas.gridSize = ev.target.dataset.gridSize;
-      mainCanvas.updateGrid(true);
+      resizeGrid = mainCanvas.updateGrid(true);
+      if (resizeGrid) {
+        switchActiveElement(gridControls, ev.target);
+      } else {
+        mainCanvas.gridSize = oldGridSize;
+      }
       mainCanvas.drawGrid();
     }
   }
@@ -98,17 +104,17 @@ window.onload = (ev) => {
    * Init point
    */
   
-  //Init palette and main drawing canvas
-  const palette = createPalette("#row-palette");
+  //Init palette and main drawing canvas  
   const mainCanvas = new MainCanvas("#main-canvas", 8);
-  const sizeControls = document.querySelectorAll("#col-controls-size-select button");
+  const palette = createPalette("#row-palette", mainCanvas.selectedColor);
+  const gridControls = document.querySelectorAll("#col-controls-size-select button");
   const toolControls = document.querySelectorAll("#col-controls-tool-select button");
   const exportControls = document.querySelectorAll("#col-controls-export-select button");
 
   //Add eventListeners to our elements
   mainCanvas.canvasElement.addEventListener("click", handleCanvasClick, false);  
   palette.addEventListener("colorChange", handlePaletteColorChange, false);
-  sizeControls.forEach(element => {
+  gridControls.forEach(element => {
     element.addEventListener("click", handleGridSize, false);
   });
   toolControls.forEach(element => {
@@ -118,7 +124,11 @@ window.onload = (ev) => {
     element.addEventListener("click", handleExportImageSelection, false);
   });
   //TODO: handle scaling correctly
-  window.addEventListener("resize", handleWindowResize, false);  
+  window.addEventListener("resize", handleWindowResize, false);   
+
+  //Set default selected tools
+  switchActiveElement(toolControls, document.querySelector("#col-controls-tool-select button:first-child"));
+  switchActiveElement(gridControls, document.querySelector("#col-controls-size-select button:first-child"));
 }
 
 /**
@@ -133,9 +143,9 @@ function MainCanvas (domElementId, gridSize) {
   this.gridSize = gridSize || 8;
   this.width = document.querySelector("#wrapper").offsetWidth;
   this.height = document.querySelector("#wrapper").offsetWidth;
-  this.gridBorderColor = "#000";
+  this.gridBorderColor = "#000000";
   this.grid = [];
-  this.selectedColor = "#000";
+  this.selectedColor = "#000000";
   this.selectedTool = "pencil";
 
   this.init = function() {
@@ -172,7 +182,8 @@ function MainCanvas (domElementId, gridSize) {
         const userAcceptsDelete = 
           confirm("Warning, changing the grid density will erase the current drawing, are you sure?");
         if (userAcceptsDelete) {
-          this.clearGrid();
+          this.clearGrid();          
+          return userAcceptsDelete;
         }
       } else {
         this.grid.forEach((row, rowIndex) => {
@@ -223,7 +234,7 @@ function Cell (width, height, posX, posY, fillColor) {
  * @param {*} targetElementId 
  * @returns 
  */
-function createPalette (targetElementId) {
+function createPalette (targetElementId, defaultColorSelected) {
   const colorPalette = {
     default: [
       "#0C46FA",
@@ -264,7 +275,13 @@ function createPalette (targetElementId) {
   //Create palette element
   for (let i = 0; i < colorPalette.default.length; i++) {
     const paletteColor = document.createElement('div');
-    paletteColor.className = "palette-color";
+    const paletteColorSelected = document.createElement('span');
+    paletteColorSelected.className = "selection-check";
+    paletteColorSelected.textContent = "\u2022";
+    paletteColor.appendChild(paletteColorSelected);
+    //Set default color selected
+    paletteColor.className = colorPalette.default[i] == defaultColorSelected ? 
+      "palette-color selected" : "palette-color";
     paletteColor.dataset.color = colorPalette.default[i];
     paletteColor.style.backgroundColor = colorPalette.default[i];
     paletteColor.addEventListener("click", handleColorChange, false);
@@ -278,8 +295,10 @@ function createPalette (targetElementId) {
 function switchActiveElement(DOMSelector, eventTarget) {
   DOMSelector.forEach(element => {
     element.style.color = "black";
+    element.style.fontWeight = "normal";
   });
-  eventTarget.style.color = "red";
+  eventTarget.style.color = "#2196f3";
+  eventTarget.style.fontWeight = "bold";
 }
 
 //Finds a cell into the grid
@@ -301,7 +320,8 @@ function findCellCoordinatesInGrid(grid, x, y) {
 
 //Check if a selected x, y screen point is in boundaries
 function isInBoundaries(cell, x, y) {
-  return (x < (cell.posX + cell.width) && y < (cell.posY + cell.width) && x > cell.posX && y > cell.posY);
+  //posX - 1 and posY - 1 is a bias to compensate and prevent "false" clicks if the user clicks on the grid border
+  return (x < (cell.posX + cell.width) && y < (cell.posY + cell.width) && x > cell.posX - 1 && y > cell.posY - 1);
 }
 
 /**
